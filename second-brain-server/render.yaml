@@ -1,0 +1,38 @@
+# Render Blueprint for the Second Brain server. In Render: New > Blueprint > pick your GitHub repo.
+#
+# IMPORTANT: this file is set up for Render's FREE plan, which cannot attach a persistent disk.
+# On the free plan chats.db is erased every time the service redeploys, restarts or goes idle
+# (it sleeps after 15 minutes without traffic). To keep data, use the paid variant at the bottom.
+services:
+  - type: web
+    name: second-brain-server
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION        # better-sqlite3 ships ready-made binaries for Node 20
+        value: "20"
+      - key: NODE_ENV
+        value: production
+      - key: ALLOWED_ORIGIN      # "*" = any site; or your frontend's origin if it is hosted elsewhere
+        value: "*"
+      - key: TRUST_PROXY         # Render puts one proxy in front of the app
+        value: "1"
+      - key: GEMINI_API_KEYS     # enter the keys in the Render dashboard; they never go in git
+        sync: false
+      # PORT is set by Render itself. Don't define it.
+
+# ---- PAID VARIANT: keeps chats.db across restarts and deploys (a persistent disk needs a paid plan) ----
+# Replace "plan: free" above with "plan: starter", then add under that service:
+#
+#     disk:
+#       name: chats-data
+#       mountPath: /var/data
+#       sizeGB: 1
+#
+# and add one more entry to envVars:
+#
+#       - key: DB_PATH
+#         value: /var/data/chats.db

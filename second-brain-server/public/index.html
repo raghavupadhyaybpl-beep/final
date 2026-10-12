@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Second Brain</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#000;--card:#121212;--ink:#f4f4f4;--mute:#8d8d8d;--red:#ff2d3d;--line:#262626}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.4;min-height:100%}
+header{display:flex;align-items:center;gap:12px;padding:12px 14px}
+#burger{background:transparent;border:0;padding:8px;width:44px;height:44px;cursor:pointer}
+#burger i{display:block;height:2.5px;background:#fff;border-radius:2px;margin:6px 4px}
+header h1{font-size:18px;margin:0}
+main{max-width:560px;margin:0 auto;padding:6px 16px 40px}
+#scrim{position:fixed;inset:0;background:rgba(0,0,0,.6);opacity:0;pointer-events:none;transition:.2s;z-index:5}
+#drawer{position:fixed;top:0;bottom:0;left:0;width:270px;max-width:80%;background:#0d0d0d;border-right:1px solid var(--line);transform:translateX(-100%);transition:.25s;z-index:6;padding:calc(env(safe-area-inset-top,0px) + 18px) 12px 18px}
+body.open #drawer{transform:none}body.open #scrim{opacity:1;pointer-events:auto}
+#drawer h2{font-size:13px;color:var(--mute);margin:4px 10px 12px;font-weight:600;letter-spacing:.08em}
+#drawer button{display:block;width:100%;text-align:left;background:transparent;color:var(--ink);border:0;border-radius:12px;padding:14px 12px;font:inherit;font-size:16px;cursor:pointer}
+#drawer button.on{background:#1c1c1c;color:#fff}
+.sep{height:1px;background:var(--line);margin:8px 6px}
+button{font:inherit}
+.center{display:flex;flex-direction:column;align-items:center;text-align:center;margin:18px 0}
+#big{position:relative;width:132px;height:132px;border-radius:50%;background:var(--red);border:0;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 10px rgba(255,45,61,.18),0 0 0 22px rgba(255,45,61,.08),0 0 50px 8px rgba(255,45,61,.55)}
+#big svg{width:58px;height:58px}
+#big.on{animation:pulse 1.2s infinite}
+@keyframes pulse{50%{transform:scale(1.07);box-shadow:0 0 0 14px rgba(255,45,61,.25),0 0 0 30px rgba(255,45,61,.1),0 0 70px 14px rgba(255,45,61,.75)}}
+.hint{margin-top:26px;font-size:14px;color:var(--mute);max-width:300px}
+.live{margin-top:8px;font-size:16px;min-height:22px}
+.msg{font-size:14px;color:#ff8a93;min-height:18px;margin-top:4px}
+.ans{margin-top:12px;width:100%;text-align:left;padding:12px;border-radius:14px;background:var(--card);border:1px solid var(--line);white-space:pre-wrap;font-size:15px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:14px}
+.typebox{display:flex;gap:8px;align-items:center;padding:8px 8px 8px 14px}
+input{flex:1;width:100%;font:inherit;color:var(--ink);background:transparent;border:0;outline:0}
+.typebox button{background:var(--red);color:#fff;border:0;border-radius:12px;padding:10px 16px;font-weight:600}
+.vt{font-size:20px;font-weight:700;margin:6px 0 10px}
+.stat{font-size:13px;color:var(--mute);margin-bottom:6px}
+.item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:0}
+.item input[type=checkbox]{flex:none;width:20px;height:20px;margin-top:2px;accent-color:var(--red)}
+.txt{flex:1;word-break:break-word}
+.done .txt{text-decoration:line-through;color:var(--mute)}
+.when{font-size:12px;color:var(--mute)}
+.x{background:transparent;color:var(--mute);border:0;padding:2px 8px;font-size:20px}
+.empty{color:var(--mute);text-align:center;padding:22px 0;font-size:14px}
+.map{overflow-x:auto}
+.tick{flex:none;width:30px;height:30px;border-radius:50%;border:2px solid var(--red);background:transparent;color:rgba(255,45,61,.4);padding:0;font-size:16px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.tick.on{background:var(--red);color:#fff}
+.redo{flex:none;background:transparent;color:var(--red);border:1px solid var(--red);border-radius:10px;padding:5px 9px;font-size:13px;cursor:pointer}
+.chips{display:flex;gap:8px;margin-bottom:10px}
+.chips button{flex:1;background:transparent;color:var(--mute);border:1px solid var(--line);border-radius:12px;padding:9px 4px;font-size:14px}
+.chips button.on{background:var(--red);color:#fff;border-color:var(--red);font-weight:700}
+.map text{fill:#f4f4f4;font-size:12px;font-family:inherit}
+.dash{background:#ececec;border-radius:28px;padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;color:#111}
+.dc{background:#f8f8f8;border-radius:20px;padding:14px;min-height:118px;display:flex;flex-direction:column;justify-content:space-between;cursor:default}
+.dc.blk{background:#111;color:#fff}.dc.org{background:#ee6a1d;color:#fff}.dc.w2{grid-column:span 2}
+.dc small{font-size:12px;opacity:.7;display:block}
+.dn{font-size:38px;font-weight:800;line-height:1}
+.dn em{font-style:normal;font-size:16px;opacity:.5;font-weight:600}
+.pbar{height:8px;border-radius:4px;background:#ddd;overflow:hidden;margin-top:10px}.pbar i{display:block;height:100%;background:#ee6a1d}
+.dots{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-top:8px}.dots i{aspect-ratio:1;border-radius:50%;background:#dcdcdc}.dots i.d{background:#111}.dots i.o{background:#ee6a1d}
+.bars{display:flex;align-items:flex-end;gap:7px;height:70px;margin-top:10px}.bars div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font-size:10px;gap:4px}.bars b{width:100%;background:#111;border-radius:5px 5px 0 0;min-height:4px}.bars .t b{background:#ee6a1d}
+.q{font-size:20px;font-weight:800;line-height:1.15}
+.go{cursor:pointer}
+.plus{width:38px;height:38px;border-radius:50%;background:#ee6a1d;color:#fff;font-size:24px;display:flex;align-items:center;justify-content:center;flex:none}
+.cmsgs{display:flex;flex-direction:column;gap:10px;margin-bottom:12px;min-height:180px}
+.bub{max-width:90%;padding:10px 13px;border-radius:16px;white-space:pre-wrap;word-break:break-word;font-size:15px}
+.bub.u{align-self:flex-end;background:var(--red);color:#fff;border-bottom-right-radius:4px}
+.bub.a{align-self:flex-start;background:var(--card);border:1px solid var(--line);border-bottom-left-radius:4px}
+.acts{display:flex;gap:8px;margin-top:8px}
+.acts button,.acts a{background:transparent;color:var(--mute);border:1px solid var(--line);border-radius:10px;padding:4px 9px;font-size:12px;text-decoration:none;cursor:pointer}
+.cmic{flex:none;width:40px;height:40px;border-radius:50%;background:transparent!important;border:1.5px solid var(--red)!important;padding:0!important;display:flex;align-items:center;justify-content:center}
+.cmic.on{background:var(--red)!important}
+#csend{background:var(--red);color:#fff;border:0;border-radius:12px;padding:10px 16px;font-weight:600}
+[hidden]{display:none!important}
+.tb{background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:0 12px;cursor:pointer;min-height:42px;white-space:nowrap}
+.chead{display:flex;align-items:center;gap:10px;margin:6px 0 10px}
+.chead .vt{margin:0;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#tpanel{position:fixed;top:0;bottom:0;right:0;width:310px;max-width:88%;background:#0d0d0d;border-left:1px solid var(--line);transform:translateX(100%);transition:.25s;z-index:6;padding:calc(env(safe-area-inset-top,0px) + 14px) 12px calc(env(safe-area-inset-bottom,0px) + 14px);display:flex;flex-direction:column;gap:8px}
+body.tpo #tpanel{transform:none}body.tpo #scrim{opacity:1;pointer-events:auto}
+.thead{display:flex;align-items:center;justify-content:space-between}
+.thead h2{font-size:13px;color:var(--mute);margin:4px 6px;font-weight:600;letter-spacing:.08em}
+.tnew{background:var(--red);color:#fff;border:0;border-radius:12px;padding:12px;font-weight:700;cursor:pointer}
+.tnewrow{display:flex;gap:8px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:6px 6px 6px 12px}
+.tnewrow button{background:var(--red);color:#fff;border:0;border-radius:10px;padding:8px 14px;font-weight:600;cursor:pointer}
+.tstat{font-size:12px;color:var(--mute);min-height:16px;padding:0 4px}
+#tlist{overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:4px}
+.trow{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;background:transparent;color:var(--ink);border:0;border-radius:12px;padding:10px 12px;cursor:pointer}
+.trow.on{background:#1c1c1c}
+.tt{font-size:15px;font-weight:600;word-break:break-word}.tw{font-size:12px;color:var(--mute)}
+.typing{display:inline-flex;gap:4px;align-items:center;height:18px}
+.typing i{width:7px;height:7px;border-radius:50%;background:var(--mute);animation:blink 1.2s infinite}
+.typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
+.banner{position:sticky;top:calc(env(safe-area-inset-top,0px) + 8px);z-index:4;display:flex;align-items:center;gap:8px;margin:0 0 10px;padding:10px 12px;border-radius:12px;font-size:14px;background:#2a0f12;border:1px solid var(--red);color:#ffd9dc;box-shadow:0 6px 20px rgba(0,0,0,.5)}
+.banner.warn{background:#2a2410;border-color:#ff9f1a;color:#ffe9b8}.banner.info{background:#10202a;border-color:#3aa0ff;color:#cfe8ff}
+.banner span{flex:1}.banner button{background:transparent;color:inherit;border:1px solid currentColor;border-radius:8px;padding:5px 10px;cursor:pointer}
+.banner button:disabled{opacity:.5;cursor:default}.banner .x{border:0;font-size:20px;line-height:1;padding:0 4px}
+.note{font-size:12px;color:var(--mute);margin-top:6px}
+#toasts{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);display:flex;flex-direction:column;gap:8px;align-items:center;z-index:20;pointer-events:none}
+.toast{pointer-events:auto;max-width:520px;width:100%;padding:12px 14px;border-radius:12px;font-size:14px;background:#2a0f12;border:1px solid var(--red);color:#ffd9dc;box-shadow:0 6px 24px rgba(0,0,0,.5);cursor:pointer}
+.toast.warn{background:#2a2410;border-color:#ff9f1a;color:#ffe9b8}.toast.info{background:#10202a;border-color:#3aa0ff;color:#cfe8ff}.toast.ok{background:#102a18;border-color:#2ecc71;color:#d3f7df}
+.bub.art{align-self:stretch;max-width:100%;white-space:normal}
+.arth{font-weight:700;margin-bottom:6px}
+.mermaid{overflow-x:auto;min-height:40px}.mermaid:empty::before{content:"Drawing…";color:var(--mute);font-size:13px}.mermaid svg{max-width:100%;height:auto}
+.mmsrc{margin:0;white-space:pre-wrap;font-size:12px;overflow-x:auto}.decklist{margin:0 0 4px;padding-left:20px;font-size:14px}.mmlist ul{margin:2px 0 6px;padding-left:18px}
+.acts{flex-wrap:wrap}
+#csend:disabled,#cmic:disabled{opacity:.5}
+</style>
+<!-- Libraries for mind maps (Mermaid) and PowerPoint files (PptxGenJS). "defer" = they never block the page from showing.
+     If one fails to load, the script below fetches it again when it is first needed. -->
+<script defer data-lib="mermaid" src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js" onerror="(window.__cdnFail=window.__cdnFail||{}).mermaid=1"></script>
+<script defer data-lib="PptxGenJS" src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.bundle.js" onerror="(window.__cdnFail=window.__cdnFail||{}).PptxGenJS=1"></script>
+</head>
+<body>
+<header>
+  <button id="burger" aria-label="Menu"><i></i><i></i><i></i></button>
+  <h1>🧠 Second Brain</h1>
+</header>
+<div id="scrim"></div>
+<nav id="drawer">
+  <h2>MENU</h2>
+  <button data-v="talk">🎤 Talk</button>
+  <div class="sep"></div>
+  <button data-v="dash">📊 Dashboard</button>
+  <button data-v="chat">💬 Chat</button>
+  <button data-v="idea">💡 Ideas</button>
+  <button data-v="todo">✅ To-do list</button>
+  <div class="sep"></div>
+  <button data-v="midea">🗺️ Mind map of ideas</button>
+  <button data-v="mtodo">🗺️ Mind map of to-dos</button>
+</nav>
+<aside id="tpanel" aria-label="Chats">
+  <div class="thead"><h2>CHATS</h2><button id="tclose" class="x" aria-label="Close">×</button></div>
+  <button id="tnew" class="tnew">＋ New chat</button>
+  <div class="tnewrow" id="tnewrow" hidden><input id="tname" placeholder="Topic, e.g. Chocolate Factory" maxlength="80"><button id="tcreate">Create</button></div>
+  <div class="tstat" id="tstat"></div>
+  <div id="tlist"></div>
+</aside>
+<div id="toasts" aria-live="polite"></div>
+
+<main>
+  <section id="talk">
+    <div class="center">
+      <button id="big" aria-label="Tap and speak"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3" fill="#fff"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8"/></svg></button>
+      <div class="hint" id="hint">Say "idea …" or "to do …" — or ask "what did I say…?"</div>
+      <div class="live" id="live"></div>
+      <div class="msg" id="msg"></div>
+      <div class="ans" id="ans" hidden></div>
+    </div>
+    <div class="card typebox">
+      <input id="inp" placeholder="Type: idea… / to do… / or ask a question">
+      <button id="add">Add</button>
+    </div>
+    <div class="dash" id="dashhome"></div>
+  </section>
+  <section id="lists" hidden>
+    <div class="vt" id="vt"></div>
+    <div class="chips" id="chips" hidden></div>
+    <div class="card"><div class="stat" id="stat"></div><div id="list"></div></div>
+  </section>
+  <section id="dash" hidden>
+    <div class="vt">📊 Dashboard</div>
+    <div class="dash" id="dashbox"></div>
+  </section>
+  <section id="chat" hidden>
+    <div class="chead"><button id="tbtn" class="tb" aria-label="Open chat list">☰ Chats</button><div class="vt" id="ctitle">💬 Chat</div></div>
+    <div class="banner" id="cbanner" role="alert" hidden><span id="cbtext"></span><button type="button" id="cbretry">Retry</button><button type="button" id="cbclose" class="x" aria-label="Dismiss">×</button></div>
+    <div class="cmsgs" id="cmsgs"></div>
+    <form id="cform" class="card typebox" autocomplete="off"><button type="button" id="cmic" class="cmic" aria-label="Speak"></button><input id="cin" placeholder="Chat about an idea…" maxlength="4000" enterkeyhint="send"><button type="submit" id="csend">Send</button></form>
+  </section>
+  <section id="maps" hidden>
+    <div class="vt" id="mt"></div>
+    <div class="card map" id="mapbox"></div>
+  </section>
+</main>
+
+<script>
+// ---- API configuration ----
+// Where the backend lives. EDIT THIS LINE if your frontend is hosted separately from the backend:
+//   local backend:      "http://localhost:5000/api"
+//   deployed backend:   "https://YOUR-SERVICE.onrender.com/api"
+// When the backend itself serves this page (its ./public folder, e.g. on Render) the right value is "/api",
+// so the default below uses it there, and uses the localhost address when you open the file directly or
+// from another local dev server (such as VS Code Live Server on port 5500).
+const LOCAL_API = "http://localhost:5000/api";
+const API_BASE_URL = location.protocol === "file:" || (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && location.port !== "5000") ? LOCAL_API : "/api";
+// Same CDN links as the <script> tags in <head>; used only if those tags failed to load.
+const MERMAID_URL = "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js";                  // mind maps
+const PPTX_URL = "https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.bundle.js";    // PowerPoint files
+
+const KEY="secondbrain.v1";
+let items=[],view="talk",tf="pending";
+try{items=JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){items=[]}
+const $=id=>document.getElementById(id);
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(items))}catch(e){}};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt=t=>new Date(t).toLocaleString([], {weekday:"short",hour:"numeric",minute:"2-digit"});
+const cut=(s,n)=>s.length>n?s.slice(0,n-1)+"…":s;
+let sample=null;
+(async()=>{try{sample=await claude.use("sample")}catch(e){sample=null}})();
+
+// ---- dashboard ----
+const MIC=c=>`<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3" fill="${c}"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8"/></svg>`;
+function drawDash(){
+  const td=items.filter(i=>i.type==="todo"),id=items.filter(i=>i.type==="idea"),dn=td.filter(i=>i.done),op=td.length-dn.length;
+  const pct=td.length?Math.round(dn.length/td.length*100):0;
+  const dots=Array.from({length:24},(_,k)=>{const t=td.slice().sort((a,b)=>b.at-a.at)[k];return `<i class="${t?(t.done?"d":"o"):""}"></i>`}).join("");
+  const days=Array.from({length:7},(_,k)=>{const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-(6-k));return d});
+  const cnt=days.map(d=>items.filter(i=>new Date(i.at).toDateString()===d.toDateString()).length),mx=Math.max(1,...cnt);
+  const bars=days.map((d,k)=>`<div class="${k===6?"t":""}"><b style="height:${Math.max(4,cnt[k]/mx*54)}px"></b>${"SMTWTFS"[d.getDay()]}</div>`).join("");
+  const yn=new Date(Date.now()-864e5).toLocaleDateString([], {weekday:"long"}),C=251.3;
+  const html=`
+  <div class="dc"><small>Open to-dos</small><div class="dn">${op}</div><small>still pending</small></div>
+  <div class="dc blk"><small style="color:#fff">Ideas saved</small><div class="dn">${id.length}</div><small style="color:#fff">💡 in your brain</small></div>
+  <div class="dc"><small>Done to-dos</small><div class="dn">${dn.length}<em> / ${td.length}</em></div><div class="pbar"><i style="width:${pct}%"></i></div></div>
+  <div class="dc"><small>Completed · ${pct}%</small><div class="dots">${dots}</div></div>
+  <div class="dc org go" data-go="talk"><div class="q">What did I say on ${yn}?</div><div style="display:flex;justify-content:space-between;align-items:center"><small style="color:#fff">Tap and ask</small>${MIC("#fff")}</div></div>
+  <div class="dc" style="align-items:center;justify-content:center;text-align:center"><svg viewBox="0 0 100 100" width="118" height="118"><circle cx="50" cy="50" r="40" fill="none" stroke="#ddd" stroke-width="9"/><circle cx="50" cy="50" r="40" fill="none" stroke="#ee6a1d" stroke-width="9" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-pct/100)}" transform="rotate(-90 50 50)"/><text x="50" y="57" text-anchor="middle" style="font-size:24px;font-weight:800;fill:#111">${items.length}</text></svg><small>notes in your brain</small></div>
+  <div class="dc w2"><small>Notes in the last 7 days · ${cnt.reduce((a,b)=>a+b,0)} total</small><div class="bars">${bars}</div></div>
+  <div class="dc blk w2 go" data-go="talk" style="flex-direction:row;align-items:center;gap:12px;min-height:96px"><div style="flex:1"><div class="q">Talk to your brain</div><small style="color:#fff">Say "idea …", "to do …" or ask a question</small></div><span class="plus">${MIC("#fff").replace('width="26" height="26"','width="20" height="20"')}</span></div>`;
+  $("dashbox").innerHTML=html;
+  $("dashhome").innerHTML=html.replace(/<div class="dc org go"[\s\S]*?<\/div><\/div>/,"").replace(/<div class="dc blk w2 go"[\s\S]*?<\/span><\/div>/,"");
+}
+$("dashbox").addEventListener("click",e=>{if(e.target.closest("[data-go]")){setView("talk");setTimeout(()=>$("big").click(),150)}});
+
+// ---- navigation ----
+function setView(v){
+  view=v;document.body.classList.remove("open","tpo");
+  document.querySelectorAll("#drawer button").forEach(b=>b.classList.toggle("on",b.dataset.v===v));
+  $("talk").hidden=v!=="talk";$("lists").hidden=!(v==="idea"||v==="todo");$("maps").hidden=!(v==="midea"||v==="mtodo");$("dash").hidden=v!=="dash";$("chat").hidden=v!=="chat";
+  render();
+}
+$("burger").onclick=()=>document.body.classList.add("open");
+$("scrim").onclick=()=>document.body.classList.remove("open","tpo");
+document.querySelectorAll("#drawer button").forEach(b=>b.onclick=()=>setView(b.dataset.v));
+
+// ---- lists ----
+function render(){
+  drawDash();if(view==="chat")renderChat();
+  if(view==="idea"||view==="todo"){
+    const todo=view==="todo",base=items.filter(i=>i.type===view);
+    const all=todo?base.filter(i=>tf==="all"||(tf==="done")===!!i.done):base;
+    $("chips").hidden=!todo;
+    if(todo)$("chips").innerHTML=[["pending","Pending",base.filter(i=>!i.done).length],["done","Done",base.filter(i=>i.done).length],["all","All",base.length]].map(([k,n,c])=>`<button data-f="${k}" class="${tf===k?"on":""}">${n} (${c})</button>`).join("");
+    $("vt").textContent=todo?"✅ To-do list":"💡 Ideas";
+    $("stat").textContent=todo&&base.length?`${base.filter(i=>i.done).length} of ${base.length} done`:"";
+    const l=all.sort((a,b)=>b.at-a.at);
+    $("list").innerHTML=l.length?l.map(i=>`<div class="item ${i.done?"done":""}" data-id="${i.id}">${todo?(i.done?`<span class="tick on">✓</span>`:`<button class="tick" aria-label="Mark done">✓</button>`):"<span>💡</span>"}<div class="txt">${esc(i.text)}<div class="when">${fmt(i.at)}${i.topic?" · "+esc(i.topic):""}</div></div>${todo&&i.done?`<button class="redo">↩ Redo</button>`:""}<button class="x" aria-label="Delete">×</button></div>`).join(""):`<div class="empty">${todo&&base.length?"Nothing in this tab.":"Nothing here yet. Go to Talk and say it."}</div>`;
+  }else if(view==="dash")drawDash();
+  else if(view==="midea"||view==="mtodo")drawMap(view==="mtodo"?"todo":"idea");
+}
+$("chips").addEventListener("click",e=>{const f=e.target.dataset.f;if(f){tf=f;render()}});
+$("list").addEventListener("click",e=>{
+  const row=e.target.closest(".item");if(!row)return;const it=items.find(i=>i.id==row.dataset.id);
+  if(e.target.classList.contains("x"))items=items.filter(i=>i!==it);
+  else if(e.target.classList.contains("tick")&&!e.target.classList.contains("on"))it.done=true;
+  else if(e.target.classList.contains("redo"))it.done=false;else return;
+  save();render();
+});
+
+// ---- mind maps ----
+const mapCache={};
+function dayGroups(list){
+  const g={},t=new Date().toDateString(),y=new Date(Date.now()-864e5).toDateString();
+  list.forEach((it,k)=>{const d=new Date(it.at),n=d.toDateString()===t?"Today":d.toDateString()===y?"Yesterday":d.toLocaleDateString([], {weekday:"short",day:"numeric",month:"short"});(g[n]=g[n]||[]).push(k)});
+  return Object.entries(g).map(([name,idx])=>({name,idx}));
+}
+async function groupItems(list){
+  if(list.length<3||!sample)return dayGroups(list);
+  const sig=list.map(i=>i.id+i.text).join("|");if(mapCache[sig])return mapCache[sig];
+  try{
+    const r=await sample.json(`Group these numbered notes into 2-6 short themes (1-2 word names). Reply ONLY JSON: {"groups":[{"name":"Theme","idx":[0,2]}]}. Every index must appear once.\n\n`+list.map((i,k)=>`${k}. ${i.text}`).join("\n"),{modelTier:"quick"});
+    const g=(r.groups||[]).filter(x=>x&&x.name&&Array.isArray(x.idx));
+    const seen=new Set(g.flatMap(x=>x.idx));const rest=list.map((_,i)=>i).filter(i=>!seen.has(i));
+    if(rest.length)g.push({name:"Other",idx:rest});
+    return mapCache[sig]=g;
+  }catch(e){return dayGroups(list)}
+}
+async function drawMap(type){
+  const todo=type==="todo",list=items.filter(i=>i.type===type).sort((a,b)=>a.at-b.at);
+  $("mt").textContent=todo?"🗺️ Mind map of to-dos":"🗺️ Mind map of ideas";
+  if(!list.length){$("mapbox").innerHTML=`<div class="empty">Nothing to map yet.</div>`;return}
+  $("mapbox").innerHTML=`<div class="empty">Building your map…</div>`;
+  const groups=await groupItems(list);if(view!==(todo?"mtodo":"midea"))return;
+  const RH=36,W=380;const wrap=s=>{if(s.length<=24)return [s];let c=s.lastIndexOf(" ",24);if(c<8)c=24;return [s.slice(0,c),cut(s.slice(c).trim(),24)]};let y=14,cols=["#ff2d3d","#ff9f1a","#2ecc71","#3aa0ff","#b06cff","#ff5fa2"],paths="",nodes="",cy=[];
+  groups.forEach((g,gi)=>{
+    const c=cols[gi%cols.length],top=y;
+    g.idx.forEach(k=>{const it=list[k];if(!it)return;
+      const ln=wrap(it.text);nodes+=`<text x="222" ${it.done?'opacity=".45"':""}>${ln.map((t,q)=>`<tspan x="222" y="${y+(ln.length>1?(q?12:-2):4)}">${esc(t)}</tspan>`).join("")}</text>`;
+      paths+=`<path d="M200 ${top+(g.idx.length*RH-RH)/2+10} C210 ${top+(g.idx.length*RH-RH)/2+10},210 ${y}, 218 ${y}" stroke="${c}" fill="none" stroke-width="1.5"/>`;
+      nodes+=`<circle cx="218" cy="${y}" r="3" fill="${c}"/>`;y+=RH});
+    const mid=top+(g.idx.length*RH-RH)/2+10;cy.push(mid);
+    nodes+=`<rect x="104" y="${mid-13}" width="96" height="26" rx="13" fill="${c}"/><text x="152" y="${mid+4}" text-anchor="middle" style="fill:#000;font-weight:700">${esc(cut(g.name,12))}</text>`;
+    y+=8;
+  });
+  const rootY=(Math.min(...cy)+Math.max(...cy))/2;
+  cy.forEach((m,gi)=>{paths+=`<path d="M78 ${rootY} C92 ${rootY},92 ${m},104 ${m}" stroke="${cols[gi%cols.length]}" fill="none" stroke-width="2"/>`});
+  nodes+=`<rect x="6" y="${rootY-20}" width="72" height="40" rx="20" fill="#fff"/><text x="42" y="${rootY+4}" text-anchor="middle" style="fill:#000;font-weight:800">${todo?"To-dos":"Ideas"}</text>`;
+  $("mapbox").innerHTML=`<svg viewBox="0 0 ${W} ${y+6}" width="100%">${paths}${nodes}</svg>`;
+}
+
+// ---- sorting ----
+function localSort(text){
+  return text.split(/(?<=[.!?\n])\s+/).map(s=>s.trim()).filter(Boolean).map(s=>({type:/\b(idea|what if|maybe|could build|startup|concept|imagine)\b/i.test(s)?"idea":"todo",text:s}));
+}
+function explicit(text){
+  const m=text.match(/^\s*(idea|to[\s-]?do|todo)(?:\s+list)?\b[\s:,.\-]*/i)||text.match(/[\s,.\-]*(?:this is an?\s+|it'?s an?\s+|as an?\s+)?(idea|to[\s-]?do|todo)[\s.!]*$/i);
+  if(!m)return null;const rest=text.replace(m[0],"").trim();if(!rest||isQ(rest))return null;
+  return [{type:/idea/i.test(m[1])?"idea":"todo",text:rest.charAt(0).toUpperCase()+rest.slice(1)}];
+}
+async function sortText(text){
+  const ex=explicit(text);if(ex)return ex;
+  if(!sample)return localSort(text);
+  try{
+    const r=await sample.json(`Split this note into separate items. If the user explicitly says the word "idea" or "to do" about an item, obey that. Otherwise classify each as "todo" (an action/task/thing to buy or do) or "idea" (a thought, concept, or something to explore later). Keep wording short and clear, in the user's language. Reply with ONLY a JSON array like [{"type":"todo","text":"Buy 2 litres of milk"}].\n\nNote: ${text}`,{modelTier:"quick"});
+    const arr=(Array.isArray(r)?r:(r.items||[])).filter(x=>x&&x.text&&(x.type==="todo"||x.type==="idea"));
+    return arr.length?arr:localSort(text);
+  }catch(e){return localSort(text)}
+}
+const isQ=t=>/^\s*(what(?!\s+if\b)|which|where|how|when|who|why|whats|what's|did i|do i|have i)\b/i.test(t)||/\?\s*$/.test(t);
+async function handle(text){
+  text=(text||"").trim();if(!text)return;
+  const core=text.replace(/^\s*(idea|to[\s-]?do|todo)(?:\s+list)?\b[\s:,.\-]*/i,"");
+  if(isQ(core)){$("live").textContent=text;$("msg").textContent="";return askBrain(core)}
+  $("ans").hidden=true;$("msg").textContent="Sorting…";
+  const out=await sortText(text),now=Date.now();
+  out.forEach((o,k)=>items.push({id:now+"-"+k,type:o.type,text:o.text,done:false,at:now}));
+  save();
+  $("msg").textContent="Saved to "+[...new Set(out.map(o=>o.type==="todo"?"To-dos ✅":"Ideas 💡"))].join(" & ");
+}
+$("add").onclick=async()=>{const t=$("inp").value;$("inp").value="";await handle(t)};
+$("inp").addEventListener("keydown",e=>{if(e.key==="Enter")$("add").click()});
+
+// ---- voice ----
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+let rec=null,listening=false,heard="";
+const HINT='Say "idea …" or "to do …" — or ask "what did I say…?"';
+$("big").onclick=()=>{
+  if(!SR){$("msg").textContent="Voice isn't supported in this browser. Type below or use your keyboard's mic.";$("inp").focus();return}
+  if(listening){rec.stop();return}
+  heard="";$("live").textContent="";
+  rec=new SR();rec.interimResults=true;rec.continuous=false;
+  rec.onresult=e=>{let t="";for(const r of e.results)t+=r[0].transcript;heard=t;$("live").textContent=t};
+  rec.onstart=()=>{listening=true;$("big").classList.add("on");$("hint").textContent="Listening… tap again when done";$("msg").textContent=""};
+  rec.onend=async()=>{listening=false;$("big").classList.remove("on");$("hint").textContent=HINT;const t=heard;heard="";await handle(t);setTimeout(()=>{$("live").textContent=""},2500)};
+  rec.onerror=ev=>{$("msg").textContent=ev.error==="not-allowed"?"Mic blocked. Allow the microphone or type below.":"Didn't catch that. Try again."};
+  try{rec.start()}catch(e){}
+};
+
+// ---- ask ----
+const DAYS=["sunday","monday","tuesday","wednesday","thursday","friday","saturday"];
+function localAnswer(q){
+  const ql=q.toLowerCase();let pool=items.filter(i=>!isQ(i.text));const d0=new Date();d0.setHours(0,0,0,0);
+  const same=(a,b)=>new Date(a).toDateString()===b.toDateString();
+  if(/\btoday\b/.test(ql))pool=pool.filter(i=>same(i.at,d0));
+  else if(/\byesterday\b/.test(ql)){const y=new Date(d0);y.setDate(y.getDate()-1);pool=pool.filter(i=>same(i.at,y))}
+  else{const di=DAYS.findIndex(d=>ql.includes(d));if(di>=0)pool=pool.filter(i=>new Date(i.at).getDay()===di)}
+  if(/\bidea/.test(ql))pool=pool.filter(i=>i.type==="idea");
+  else if(/\b(to[\s-]?do|task|buy|need)/.test(ql))pool=pool.filter(i=>i.type==="todo");
+  const stop=new Set("what which where how when who why did i say said on the my a an to do is was about have need tell me".split(" "));
+  const words=ql.replace(/[^\w\s]/g,"").split(/\s+/).filter(w=>w.length>2&&!stop.has(w)&&!DAYS.includes(w)&&w!=="today"&&w!=="yesterday");
+  if(words.length){const m=pool.filter(i=>words.some(w=>i.text.toLowerCase().includes(w)));if(m.length)pool=m}
+  if(!pool.length)return "I couldn't find that in your notes.";
+  return pool.slice(0,6).map(i=>`• ${i.text} (${fmt(i.at)})`).join("\n");
+}
+function speak(t){try{speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(t.replace(/•/g,"")))}catch(e){}}
+async function askBrain(q){
+  const box=$("ans");box.hidden=false;
+  if(!items.length){box.textContent="Your brain is empty. Add something first.";return}
+  box.textContent="Searching your ideas and to-dos…";let out;
+  if(sample){
+    const data=items.map(i=>`- [${i.type}${i.done?", done":""}] "${i.text}" (saved ${new Date(i.at).toString().slice(0,24)})`).join("\n");
+    try{out=(await sample(`You are the user's second brain. Search these saved ideas and to-dos and answer using ONLY them. Now is ${new Date().toString().slice(0,24)}. Understand days like "Monday", "yesterday", "today". Reply in 1-3 short sentences, natural to read aloud. If not found, say so.\n\nNotes:\n${data}\n\nQuestion: ${q}`,{modelTier:"quick",cache:false})).text}
+    catch(e){out=localAnswer(q)}
+  }else out=localAnswer(q);
+  box.textContent=out;speak(out);
+}
+// ---- chat: threads live on the server; this is a local cache so the app opens instantly ----
+const TKEY="secondbrain.chat.threads.v1";
+let TH={active:"",threads:[]},chatBusy=false,genBusy=false;
+const uid=()=>"t"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+(function restoreCachedThreads(){
+  try{const d=JSON.parse(localStorage.getItem(TKEY)||"null");if(d&&Array.isArray(d.threads))TH={active:d.active||"",threads:d.threads}}catch(e){}
+  if(!TH.threads.length){ // carry over the very first single-thread version, if there is one
+    let old=[];try{old=JSON.parse(localStorage.getItem("secondbrain.chat.v1")||"[]").filter(m=>m&&m.t&&!m.wait)}catch(e){}
+    if(old.length)TH.threads=[{id:uid(),title:"General",messages:old,created:Date.now(),updated:Date.now()}];
+  }
+  TH.threads.forEach(t=>{
+    t.messages=(t.messages||[]).filter(m=>m&&typeof m.t==="string"&&!m.wait&&!m.err&&!m.kind);
+    t.created=t.created||Date.now();t.updated=t.updated||t.created;
+    t.synced=t.synced===true;  // true once the server is known to have this thread
+    t.loaded=false;t.fetching=false;t.tried=false; // per-session: has its history been fetched yet?
+  });
+  if(!TH.threads.some(t=>t.id===TH.active))TH.active=TH.threads.length?TH.threads[0].id:"";
+})();
+const saveThreads=()=>{try{localStorage.setItem(TKEY,JSON.stringify({active:TH.active,threads:TH.threads.map(t=>({
+  id:t.id,title:t.title,created:t.created,updated:t.updated,synced:t.synced,
+  messages:t.messages.filter(m=>!m.wait&&!m.kind).slice(-60).map(m=>({r:m.r,t:m.t,v:m.v}))}))}))}catch(e){}};
+const cur=()=>TH.threads.find(t=>t.id===TH.active);
+$("cmic").innerHTML=MIC("#ff2d3d");
+
+// ---- topic matching: keeps notes from other topics out of a thread ----
+const TSTOP=new Set("the and for with about project thread chat idea ideas general new my our".split(" "));
+const keywords=title=>title.toLowerCase().split(/[^a-z0-9]+/).filter(w=>w.length>2&&!TSTOP.has(w)).map(w=>w.length>3?w.replace(/s$/,""):w);
+const isGeneral=t=>t.title.trim().toLowerCase()==="general"||!keywords(t.title).length;
+function topicNotes(t){
+  let pool;
+  if(isGeneral(t))pool=items.filter(i=>!i.topic).slice(-30);
+  else{
+    const kw=keywords(t.title),need=Math.min(2,kw.length);
+    pool=items.filter(i=>i.topic?i.topic===t.title:kw.filter(k=>i.text.toLowerCase().includes(k)).length>=need).slice(-25);
+  }
+  return pool.map(i=>`- [${i.type}] ${i.text} (${new Date(i.at).toDateString()})`);
+}
+function systemFor(t){
+  const notes=topicNotes(t).join("\n")||"(none yet)";
+  return `You are the user's second brain and idea partner, chatting on a phone. Now it is ${new Date().toString().slice(0,24)}. Answer simple questions (like today's day or date) directly. This chat thread is called "${t.title}". Treat it as its own project: stay on this thread's topic and never bring in details from other threads. Be warm, practical and concise (under about 130 words unless asked for more); use short paragraphs or a few bullets. When the user shares an idea, explain it clearly: what it is, who it's for, how it could work, first steps, and main risks. Saved notes for this topic:\n${notes}\n\nYou cannot browse the internet. For facts you can't be sure of (costs, prices, laws, market data), give a rough range with your assumptions, say plainly it is an estimate, and end your reply with one final line: VERIFY: <a short Google search query to check it>. Omit that line when no verification is needed.`;
+}
+
+// ---- API wrapper and error handling ----
+// Every backend call goes through api(). A failure becomes an Error carrying:
+//   .userMsg   friendly text to show            .kind       "error" | "warn" | "info" (how it is styled)
+//   .status    HTTP status (0 = no response)    .code       the backend's error code, if any
+//   .retry     seconds to wait (Retry-After)    .retryable  true if sending the same thing again may work
+// Nothing here touches the text box or the chat, so an error can never cost you what you typed.
+function apiError(status,body,retryAfter){
+  const code=(body&&body.code)||"",srv=body&&typeof body.error==="string"?body.error:"";
+  let m,kind="error",retryable=true;
+  if(status===429&&code==="API_QUOTA_EXHAUSTED"){m="Rate limit reached. Please retry in a minute.";kind="warn"}
+  else if(status===429){m="Too many requests. Please wait a moment.";kind="warn"}
+  else if(status===503){m="Server busy, please wait a moment…";kind="warn"}
+  else if(status===500||status===502||status===504)m="The server hit a problem. Please try again.";
+  else if(status===422){m="The AI's answer couldn't be read. Please try again.";kind="warn"}
+  else if(status===413){m="That message is too long. Please shorten it.";retryable=false}
+  else if(status===403){m="You don't have access to this chat.";retryable=false}
+  else if(status===404){m="Not found.";retryable=false}
+  else{m=srv?cut(srv,140):"Something went wrong (HTTP "+status+").";retryable=status>=500||status===409}
+  const er=new Error(m);
+  return Object.assign(er,{userMsg:m,kind,retryable,status,code,retry:retryAfter&&/^\d+$/.test(retryAfter)?+retryAfter:null});
+}
+async function api(method,path,body,{timeoutMs=100000}={}){
+  const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),timeoutMs);
+  let res;
+  try{
+    res=await fetch(API_BASE_URL+path,{method,cache:"no-store",signal:ctl.signal,
+      headers:body?{"Content-Type":"application/json"}:undefined,body:body?JSON.stringify(body):undefined});
+  }catch(e){ // no response at all: offline, server asleep, DNS, or our own timeout
+    const timedOut=!!e&&e.name==="AbortError";
+    throw Object.assign(new Error("network"),{network:true,status:0,code:timedOut?"TIMEOUT":"NETWORK",kind:timedOut?"warn":"info",retryable:true,retry:null,
+      userMsg:timedOut?"The server took too long to answer. Please try again.":"Can't reach the server. If it was idle it may be waking up (up to a minute). Try again soon."});
+  }finally{clearTimeout(timer)}
+  let d=null;try{d=await res.json()}catch(e){} // a proxy's HTML error page isn't JSON: the status code still tells the story
+  if(!res.ok)throw apiError(res.status,d,res.headers.get("Retry-After"));
+  if(!d||typeof d!=="object")throw apiError(502,null,null); // "200 OK" that isn't JSON (captive portal, wrong address): treat as a server problem
+  return d;
+}
+
+// ---- how errors are shown ----
+// Toast: a short message at the bottom, for things that aren't a message you typed (history, mind maps, downloads).
+function toast(msg,kind="error",ms=6500){
+  const box=$("toasts"),el=document.createElement("div");
+  el.className="toast "+kind;el.textContent=msg;el.onclick=()=>el.remove();box.appendChild(el);
+  while(box.children.length>3)box.firstChild.remove();
+  setTimeout(()=>el.remove(),ms);
+}
+const showError=(e,fallback)=>toast(((e&&e.userMsg)||fallback||"Something went wrong. Please try again.")+(e&&e.retry&&(e.status===429||e.status===503)?` Try again in ${e.retry}s.`:""),(e&&e.kind)||"error");
+// Banner: pinned to the top of the chat window while a message you typed hasn't gone through. It counts down any wait,
+// and its Retry button re-sends what is still in the box.
+let bannerTimer=null;
+const hideBanner=()=>{clearInterval(bannerTimer);$("cbanner").hidden=true};
+function showBanner(e,{keptText=false}={}){
+  hideBanner();
+  const msg=(e&&e.userMsg)||"Something went wrong. Please try again.",until=Date.now()+((e&&e.retry)||0)*1000;
+  $("cbanner").className="banner "+((e&&e.kind)||"error");
+  $("cbretry").hidden=!!e&&e.retryable===false;
+  const draw=()=>{
+    const left=Math.ceil((until-Date.now())/1000);
+    $("cbtext").textContent=msg+(left>0?` You can retry in ${left}s.`:"")+(keptText?" Your message is still in the box.":"");
+    $("cbretry").disabled=left>0;
+    if(left<=0)clearInterval(bannerTimer);
+  };
+  draw();if(until>Date.now())bannerTimer=setInterval(draw,500);
+  $("cbanner").hidden=false;
+}
+$("cbclose").onclick=hideBanner;
+$("cbretry").onclick=()=>{hideBanner();submitChat()};
+
+// ---- libraries loaded on first use (Mermaid is ~2 MB, so it isn't fetched until a mind map is made) ----
+const loading={};
+const loadScript=url=>loading[url]||(loading[url]=new Promise((ok,fail)=>{
+  const s=document.createElement("script");s.src=url;s.async=true;s.onload=ok;
+  s.onerror=()=>{delete loading[url];s.remove();fail(new Error("Couldn't load "+url))};document.head.appendChild(s);
+}));
+// The <head> tag may still be downloading when the library is first needed: wait for it instead of fetching twice.
+// Only if that tag failed (or is missing) do we download the library ourselves.
+async function needLib(name,url){
+  if(window[name])return;
+  const failed=()=>(window.__cdnFail||{})[name];
+  if(document.querySelector(`script[data-lib="${name}"]`)&&!failed()){
+    const t0=Date.now();
+    while(!window[name]&&!failed()&&Date.now()-t0<60000)await new Promise(r=>setTimeout(r,100));
+    if(window[name])return;
+  }
+  await loadScript(url);
+}
+async function ensureMermaid(){
+  await needLib("mermaid",MERMAID_URL);
+  if(!ensureMermaid.ready){window.mermaid.initialize({startOnLoad:false,theme:"dark",securityLevel:"strict"});ensureMermaid.ready=true}
+  return window.mermaid;
+}
+async function ensurePptx(){await needLib("PptxGenJS",PPTX_URL);return window.PptxGenJS}
+
+// ---- mind map: server JSON -> Mermaid "mindmap" syntax -> SVG ----
+// Labels come from the AI, so strip characters that Mermaid treats as syntax before drawing.
+const mmClean=(s,n)=>cut(String(s||"").replace(/[\[\](){}"'`;#%<>&|\\]/g," ").replace(/:{2,}/g,":").replace(/\s+/g," ").trim(),n)||"…";
+function toMermaid(mm){
+  const L=["mindmap","  root(("+mmClean(mm.root,40)+"))"];
+  (mm.branches||[]).forEach(b=>{L.push("    "+mmClean(b.label,40));(b.children||[]).forEach(c=>L.push("      "+mmClean(c,60)))});
+  return L.join("\n");
+}
+// ---- reading structured output out of a reply ----
+// If the AI answers with a Mermaid mind map or slide-deck JSON (fenced or bare), pull it out so it shows as a diagram or a
+// Download PPTX button instead of raw code. Anything else is left exactly as written.
+const MAX_MERMAID=8000;
+const isMindmap=s=>/^mindmap\s*\n/.test(s)&&s.length<=MAX_MERMAID;
+function asDeck(d){
+  if(!d||typeof d!=="object"||!Array.isArray(d.slides))return null;
+  const slides=d.slides.slice(0,30).map(s=>{
+    const title=cut(String(s&&s.title||"").trim(),120);if(!title)return null;
+    const bullets=(Array.isArray(s.bullets)?s.bullets:[]).map(b=>cut(String(b||"").trim(),200)).filter(Boolean).slice(0,8);
+    return {title,bullets};
+  }).filter(Boolean);
+  return slides.length?{title:cut(String(d.title||"").trim(),120)||slides[0].title,slides}:null;
+}
+function extractArtifacts(text){
+  const items=[];
+  let out=String(text||"").replace(/```([a-zA-Z]*)[ \t]*\r?\n([\s\S]*?)```/g,(whole,lang,body)=>{
+    const b=body.trim(),l=lang.toLowerCase();
+    if((l==="mermaid"||l==="")&&isMindmap(b)){items.push({kind:"mindmap",src:b});return ""}
+    if(l==="json"||l===""){let d=null;try{d=asDeck(JSON.parse(b))}catch(e){}if(d){items.push({kind:"deck",data:d});return ""}}
+    return whole;
+  });
+  if(!items.length){ // the whole reply is just the diagram, or just the JSON
+    const t=out.trim();
+    if(isMindmap(t)){items.push({kind:"mindmap",src:t});out=""}
+    else if(t[0]==="{"){let d=null;try{d=asDeck(JSON.parse(t))}catch(e){}if(d){items.push({kind:"deck",data:d});out=""}}
+  }
+  return {text:out.replace(/\n{3,}/g,"\n\n").trim(),items};
+}
+const makeArtifact=it=>it.kind==="mindmap"?{r:"a",kind:"mindmap",uid:uid(),src:it.src,data:null}:{r:"a",kind:"deck",uid:uid(),data:it.data};
+// Splits a raw AI reply into: the text to show, the "VERIFY:" search hint, and any mind map / deck found inside it.
+function parseReply(raw){
+  raw=String(raw||"");
+  const v=raw.match(/VERIFY:\s*(.+)$/m),body=raw.replace(/\n?VERIFY:[\s\S]*$/,"").trim(),ex=extractArtifacts(body);
+  return {t:ex.text||(ex.items.length?"Here you go:":body||"…"),v:v?v[1].trim():"",items:ex.items};
+}
+// Plain nested list, used if Mermaid can't load or can't draw the map.
+const mmFallback=d=>`<div class="mmlist"><b>${esc(d.root)}</b><ul>${(d.branches||[]).map(b=>`<li>${esc(b.label)}<ul>${(b.children||[]).map(c=>`<li>${esc(c)}</li>`).join("")}</ul></li>`).join("")}</ul></div>`;
+async function drawMindmap(t,m){
+  m.drawing=true;
+  try{
+    const mer=await ensureMermaid();
+    const {svg}=await mer.render("mm"+m.uid,m.src||toMermaid(m.data)); // Mermaid returns the finished SVG
+    m.svg=svg;
+  }catch(e){
+    m.failed=true;
+    const stray=document.getElementById("dmm"+m.uid);if(stray)stray.remove(); // Mermaid leaves an error graphic behind
+  }finally{m.drawing=false}
+  const bub=(document.getElementById("mm-"+m.uid)||{}).closest?document.getElementById("mm-"+m.uid).closest(".bub"):null;
+  if(bub&&t.messages.includes(m))replaceBubble(t,bub,m);else paint(t);
+}
+const drawPending=t=>t.messages.forEach(m=>{if(m.kind==="mindmap"&&!m.wait&&!m.svg&&!m.failed&&!m.drawing)drawMindmap(t,m)});
+
+// ---- slides: server JSON -> .pptx file, built in the browser ----
+async function downloadDeck(deck){
+  try{
+    const P=await ensurePptx(),p=new P();
+    p.layout="LAYOUT_16x9";p.title=deck.title;
+    const title=p.addSlide();title.background={color:"111111"};
+    title.addText(deck.title,{x:0.6,y:1.8,w:8.8,h:1.6,fontSize:36,bold:true,color:"FFFFFF",valign:"middle"});
+    title.addText("Made with Second Brain",{x:0.6,y:3.6,w:8.8,h:0.5,fontSize:14,color:"FF2D3D"});
+    deck.slides.forEach(s=>{
+      const sl=p.addSlide();sl.background={color:"111111"};
+      sl.addText(s.title,{x:0.6,y:0.4,w:8.8,h:0.9,fontSize:28,bold:true,color:"FF2D3D",valign:"middle"});
+      if(s.bullets&&s.bullets.length)sl.addText(s.bullets.map(b=>({text:b,options:{bullet:true,breakLine:true}})),{x:0.8,y:1.5,w:8.4,h:3.6,fontSize:18,color:"F4F4F4",valign:"top"});
+    });
+    const name=(deck.title.replace(/[^\w\- ]+/g,"").trim().slice(0,50)||"slides")+".pptx";
+    await p.writeFile({fileName:name});
+    toast("Downloaded "+name,"ok",3500);
+  }catch(e){toast("Couldn't create the PowerPoint file. Check your connection and try again.")}
+}
+
+// ---- rendering ----
+const paint=t=>{if(view==="chat"&&t.id===TH.active)renderChat()};
+const isSaved=(m,as)=>items.some(i=>i.type===as&&i.text===String(m.t).trim());
+function bubble(m,k){
+  if(m.r==="u")return `<div class="bub u">${esc(m.t)}</div>`;
+  if(m.wait)return `<div class="bub a"><span class="typing" aria-label="Typing"><i></i><i></i><i></i></span>${m.note?`<div class="note">${esc(m.note)}</div>`:""}</div>`;
+  if(m.kind==="mindmap")return `<div class="bub a art"><div class="arth">🧠 Mind map</div><div class="mermaid" id="mm-${m.uid}">${m.failed?(m.data?mmFallback(m.data):`<pre class="mmsrc">${esc(m.src)}</pre>`):(m.svg||"")}</div></div>`;
+  if(m.kind==="deck")return `<div class="bub a art"><div class="arth">📊 ${esc(m.data.title)}</div><ol class="decklist">${m.data.slides.map(s=>`<li>${esc(s.title)}</li>`).join("")}</ol><div class="acts"><button data-dl="${k}">⬇ Download PPTX</button></div></div>`;
+  return `<div class="bub a">${esc(m.t||"")}<div class="acts"><button data-save="${k}" data-as="idea">${isSaved(m,"idea")?"Saved ✓":"💡 Save idea"}</button><button data-save="${k}" data-as="todo">${isSaved(m,"todo")?"Saved ✓":"✅ Save to-do"}</button><button data-gen="mindmap" data-i="${k}">🧠 Mind map</button><button data-gen="slides" data-i="${k}">📊 Slides</button>${m.v?`<a target="_blank" rel="noopener" href="https://www.google.com/search?q=${encodeURIComponent(m.v)}">🔎 Verify</a>`:""}</div></div>`;
+}
+const scrollDown=()=>window.scrollTo(0,document.body.scrollHeight);
+const toNode=html=>{const w=document.createElement("div");w.innerHTML=html;return w.firstElementChild};
+// Appends one message to the open chat window. Returns its element (null if this chat isn't on screen).
+function appendBubble(t,m){
+  if(view!=="chat"||t.id!==TH.active)return null;
+  const box=$("cmsgs");if(box.querySelector(".empty"))box.innerHTML=""; // drop the "Ask anything" placeholder
+  const el=toNode(bubble(m,t.messages.indexOf(m)));box.appendChild(el);scrollDown();return el;
+}
+// Swaps one message's element for its new version (typing dots -> reply). If the element is gone
+// (the chat was redrawn or you switched threads) it redraws the whole chat from t.messages instead.
+function replaceBubble(t,el,m){
+  if(!el||!el.isConnected){paint(t);return null}
+  const fresh=toNode(bubble(m,t.messages.indexOf(m)));el.replaceWith(fresh);scrollDown();return fresh;
+}
+function renderThreadPanel(){
+  const list=TH.threads.slice().sort((a,b)=>b.updated-a.updated);
+  $("tlist").innerHTML=list.length?list.map(t=>`<button class="trow${t.id===TH.active?" on":""}" data-id="${esc(t.id)}"><span class="tt">${esc(t.title)}</span><span class="tw">${t.synced?"":"not synced · "}${fmt(t.updated)}</span></button>`).join(""):`<div class="empty">No chats yet.<br>Tap “New chat” to start one.</div>`;
+}
+let cooldownUntil=0;
+function syncComposer(){
+  const t=cur(),busy=chatBusy||!!(t&&t.fetching),cd=Math.ceil((cooldownUntil-Date.now())/1000);
+  $("csend").disabled=busy||cd>0;$("cmic").disabled=busy;$("cin").readOnly=busy;
+  $("csend").textContent=busy?"…":cd>0?`Wait ${cd}s`:"Send";
+}
+function startCooldown(secs){cooldownUntil=Date.now()+secs*1000;const tick=()=>{syncComposer();if(Date.now()<cooldownUntil)setTimeout(tick,500)};tick()}
+function renderChat(){
+  const t=cur(),box=$("cmsgs");
+  $("ctitle").textContent=t?t.title:"💬 Chat";
+  syncComposer();renderThreadPanel();
+  if(!t){box.innerHTML='<div class="empty">No chat selected.<br>Tap “☰ Chats” then “New chat”, or just type below.</div>';return}
+  if(t.messages.length)box.innerHTML=t.messages.map((m,k)=>bubble(m,k)).join("");
+  else box.innerHTML=`<div class="empty">${t.fetching?"Loading this chat…":"Ask anything or tell me an idea.<br>This chat keeps its own memory."}</div>`;
+  window.scrollTo(0,document.body.scrollHeight);
+  drawPending(t);
+  if(!t.loaded&&!t.fetching&&!t.tried)loadHistory(t);
+}
+
+// ---- thread sync: loadThreads() = GET /api/threads, loadHistory() = GET /api/threads/:id ----
+let syncing=false,lastSync=0;
+const setSync=s=>{$("tstat").textContent=s};
+async function loadThreads(force){
+  if(syncing||(!force&&Date.now()-lastSync<20000))return;
+  syncing=true;setSync("Syncing…");
+  const slow=setTimeout(()=>setSync("Waking the server… this can take up to a minute."),6000);
+  try{
+    const d=await api("GET","/threads",null,{timeoutMs:75000});
+    const server=Array.isArray(d.threads)?d.threads:[],byId=new Map(TH.threads.map(t=>[t.id,t]));
+    server.forEach(s=>{
+      const upd=Date.parse(s.updated_at)||Date.now();let t=byId.get(s.id);
+      if(!t){t={id:s.id,title:s.title||"Untitled",messages:[],created:Date.parse(s.created_at)||upd,updated:upd,loaded:false,fetching:false,tried:false};TH.threads.push(t);byId.set(s.id,t)}
+      else{t.title=s.title||t.title;t.updated=upd}
+      t.synced=true;
+    });
+    const onServer=new Set(server.map(s=>s.id));
+    // Threads the server doesn't know (new offline, or the server's database was reset) stay visible, flagged "not synced".
+    TH.threads.forEach(t=>{if(!onServer.has(t.id))t.synced=false});
+    TH.threads=TH.threads.filter(t=>t.synced||t.messages.length); // drop empty leftovers
+    if(!TH.threads.some(t=>t.id===TH.active))TH.active=TH.threads.length?TH.threads.slice().sort((a,b)=>b.updated-a.updated)[0].id:"";
+    lastSync=Date.now();setSync("");saveThreads();
+  }catch(e){setSync(e.network?"Offline: showing saved chats.":"Couldn't sync chats: "+(e.userMsg||"error"))}
+  finally{clearTimeout(slow);syncing=false;renderThreadPanel();if(view==="chat")renderChat()}
+}
+async function loadHistory(t){
+  t.tried=true;
+  if(!t.synced){t.loaded=true;return}      // the server has never seen it: nothing to fetch
+  t.fetching=true;paint(t);
+  try{
+    const d=await api("GET","/threads/"+encodeURIComponent(t.id),null,{timeoutMs:75000});
+    t.messages=[];
+    (d.messages||[]).forEach(m=>{
+      if(m.sender==="user"){t.messages.push({r:"u",t:m.content});return}
+      const pr=parseReply(m.content);
+      t.messages.push({r:"a",t:pr.t,v:pr.v});
+      pr.items.forEach(it=>t.messages.push(makeArtifact(it)));
+    });
+    if(d.thread){t.title=d.thread.title||t.title;t.updated=Date.parse(d.thread.updated_at)||t.updated}
+    t.loaded=true;
+  }catch(e){
+    if(e.status===404){t.loaded=true;t.synced=false}   // server lost it: keep the saved copy
+    else toast((e.userMsg||"Couldn't load this chat.")+" Showing the saved copy.","warn");
+  }finally{t.fetching=false;saveThreads();paint(t);renderThreadPanel()}
+}
+function selectThread(id){
+  const t=TH.threads.find(x=>x.id===id);if(!t)return;hideBanner();
+  t.tried=false;TH.active=id;saveThreads();closePanel();renderChat(); // renderChat starts the history fetch
+}
+
+// ---- new chat: POST /api/threads ----
+async function newThread(title,{quiet}={}){
+  title=(title||"").trim().slice(0,80)||"New chat";let t;
+  try{
+    const s=(await api("POST","/threads",{title},{timeoutMs:12000})).thread;
+    t={id:s.id,title:s.title||title,messages:[],created:Date.parse(s.created_at)||Date.now(),updated:Date.parse(s.updated_at)||Date.now(),synced:true};
+  }catch(e){
+    if(!e.network)throw e;
+    // Server asleep or offline: start the chat locally. Its first message creates it on the server.
+    t={id:uid(),title,messages:[],created:Date.now(),updated:Date.now(),synced:false};
+    if(!quiet)toast("The server is waking up. This chat will sync when you send your first message.","info");
+  }
+  Object.assign(t,{loaded:true,fetching:false,tried:true});
+  TH.threads.push(t);TH.active=t.id;saveThreads();return t;
+}
+
+// ---- panel (sidebar) ----
+function openPanel(){document.body.classList.add("tpo");renderThreadPanel();loadThreads()}
+function closePanel(){document.body.classList.remove("tpo");$("tnewrow").hidden=true}
+$("tbtn").onclick=openPanel;$("tclose").onclick=closePanel;
+$("tlist").addEventListener("click",e=>{const b=e.target.closest(".trow");if(b)selectThread(b.dataset.id)});
+$("tnew").onclick=()=>{$("tnewrow").hidden=!$("tnewrow").hidden;if(!$("tnewrow").hidden)$("tname").focus()};
+async function createFromPanel(){
+  const btn=$("tcreate");btn.disabled=true;
+  try{await newThread($("tname").value);$("tname").value="";closePanel();renderChat();$("cin").focus()}
+  catch(e){showError(e,"Couldn't create the chat.")}
+  finally{btn.disabled=false}
+}
+$("tcreate").onclick=createFromPanel;
+$("tname").addEventListener("keydown",e=>{if(e.key==="Enter")createFromPanel()});
+
+// ---- sending a message: POST /api/threads/:id/chat ----
+async function askServer(t,text){
+  const d=await api("POST","/threads/"+encodeURIComponent(t.id)+"/chat",{topic:t.title,message:text},{timeoutMs:110000});
+  return {text:String(d.reply||"").trim()||"…"};
+}
+// Only used inside the Claude link version, if the backend can't be reached.
+async function askSample(t){
+  const turns=[{role:"user",content:systemFor(t)},{role:"assistant",content:"Got it."}];
+  t.messages.filter(m=>!m.wait&&!m.kind).slice(-12).forEach(m=>turns.push({role:m.r==="u"?"user":"assistant",content:m.t}));
+  const r=await sample(turns,{modelTier:"default",cache:false});
+  return {text:r.text,local:true};
+}
+function localChat(q){
+  const l=q.toLowerCase(),d=new Date();
+  if(/what day|today'?s date|\b(day|date)\b.*\btoday\b|\btoday\b.*\b(day|date)\b/.test(l))return "Today is "+d.toLocaleDateString([], {weekday:"long",year:"numeric",month:"long",day:"numeric"})+".";
+  if(/\bthe time\b|time now|current time/.test(l))return "It's "+d.toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})+".";
+  return null;
+}
+async function sendChat(text){
+  text=(text||"").trim();if(!text||chatBusy||genBusy||Date.now()<cooldownUntil)return;
+  let t=cur();
+  if(!t){try{t=await newThread("General",{quiet:true})}catch(e){showBanner(e,{keptText:true});return}}
+  if(t.fetching)return;
+  hideBanner(); // a new attempt starts: clear the previous warning
+  // 1. add your message and a typing indicator, and lock the composer
+  const userMsg={r:"u",t:text},a={r:"a",t:"",wait:1};
+  t.messages.push(userMsg,a);chatBusy=true;syncComposer();$("cmsgs").setAttribute("aria-busy","true");
+  const uEl=appendBubble(t,userMsg);let aEl=appendBubble(t,a);
+  const slow=setTimeout(()=>{a.note="Waking the server… this can take up to a minute on the free plan.";aEl=replaceBubble(t,aEl,a)},8000);
+  try{
+    // 2. POST /api/threads/:id/chat
+    let r;
+    try{r=await askServer(t,text)}
+    catch(e){if(sample&&(e.network||e.status===404))r=await askSample(t);else throw e}
+    // 3. the typing indicator turns into the reply
+    const pr=parseReply(r.text);
+    Object.assign(a,{t:pr.t,v:pr.v,wait:0,note:""});
+    if(!r.local)t.synced=true;
+    t.updated=Date.now();
+    aEl=replaceBubble(t,aEl,a);
+    pr.items.forEach(it=>{const art=makeArtifact(it);t.messages.push(art);appendBubble(t,art)}); // diagram / Download PPTX button
+    drawPending(t);
+    if($("cin").value.trim()===text)$("cin").value=""; // cleared only now that it worked
+  }catch(e){
+    // Undo this turn so no half-sent messages stay in the chat. What you typed stays in the box.
+    t.messages=t.messages.filter(m=>m!==userMsg&&m!==a);
+    if(uEl)uEl.remove();if(aEl)aEl.remove();
+    const l=e.network?localChat(text):null;
+    if(l){const lm={r:"a",t:l};t.messages.push(userMsg,lm);appendBubble(t,userMsg);appendBubble(t,lm);$("cin").value=""}
+    else{showBanner(e,{keptText:true});if(e.retry&&(e.status===429||e.status===503))startCooldown(e.retry)}
+    if(!t.messages.length)paint(t); // nothing left: bring back the empty-chat message
+  }finally{clearTimeout(slow);chatBusy=false;syncComposer();$("cmsgs").removeAttribute("aria-busy");saveThreads();renderThreadPanel()}
+}
+const submitChat=()=>sendChat($("cin").value);
+// The Send button, the Enter key and the phone keyboard's Send key all fire this one event (not while a message is
+// being composed with an IME, and not while Send is disabled).
+$("cform").addEventListener("submit",e=>{e.preventDefault();submitChat()});
+
+// ---- mind map / slides from a reply: POST /api/mindmap, POST /api/slides ----
+async function generate(kind,idx){
+  const t=cur();if(!t)return;
+  if(genBusy||chatBusy){toast("Still working on the last request…","info",2500);return}
+  const src=t.messages[idx];if(!src||!src.t)return;
+  const prevUser=(t.messages.slice(0,idx).reverse().find(m=>m.r==="u")||{}).t;
+  const notes=[prevUser,src.t].filter(Boolean);
+  const ph={r:"a",kind:kind==="mindmap"?"mindmap":"deck",wait:1,uid:uid(),note:kind==="mindmap"?"Building your mind map…":"Writing your slides…"};
+  t.messages.push(ph);genBusy=true;paint(t);
+  try{
+    const d=await api("POST",kind==="mindmap"?"/mindmap":"/slides",kind==="mindmap"?{topic:t.title,notes}:{topic:t.title,notes,slides:6});
+    const src=kind==="mindmap"&&d&&typeof d.mermaid==="string"&&isMindmap(d.mermaid.trim())?d.mermaid.trim():null; // Mermaid text, if the server sent it
+    const data=kind==="mindmap"?(d&&d.mindmap)||null:d&&d.deck;
+    if(!data&&!src){const er=new Error("empty");er.status=422;er.userMsg="The server sent an empty result. Please try again.";throw er}
+    Object.assign(ph,{data,src,wait:0,note:""});paint(t); // paint also starts drawing a mind map
+  }catch(e){
+    t.messages=t.messages.filter(m=>m!==ph);showError(e);
+    if(e.retry&&(e.status===429||e.status===503))startCooldown(e.retry);
+  }finally{genBusy=false;paint(t)}
+}
+$("cmsgs").addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;const t=cur();if(!t)return;
+  if(b.dataset.save!==undefined){ // one-tap save of a reply into Ideas or To-dos, tagged with its thread topic
+    const m=t.messages[+b.dataset.save],as=b.dataset.as;if(!m||!m.t||isSaved(m,as))return;
+    const it={id:Date.now()+"-c",type:as,text:m.t.trim(),done:false,at:Date.now()};
+    if(!isGeneral(t))it.topic=t.title;
+    items.push(it);save();b.textContent="Saved ✓";
+  }else if(b.dataset.gen)generate(b.dataset.gen,+b.dataset.i);
+  else if(b.dataset.dl!==undefined){const m=t.messages[+b.dataset.dl];if(m&&m.data)downloadDeck(m.data)}
+});
+$("cmic").onclick=()=>{
+  if(!SR){$("cin").focus();return}
+  const r=new SR();r.interimResults=true;r.continuous=false;let t="";
+  r.onresult=e=>{t="";for(const x of e.results)t+=x[0].transcript;$("cin").value=t};
+  r.onstart=()=>$("cmic").classList.add("on");
+  r.onend=()=>{$("cmic").classList.remove("on");if(t.trim()){$("cin").value=t;submitChat()}};
+  try{r.start()}catch(e){}
+};
+
+renderThreadPanel();
+loadThreads(true); // GET /api/threads as soon as the page opens
+setView("talk");
+</script>
+</body>
+</html>
